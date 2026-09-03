@@ -13,9 +13,11 @@ def on_msg(ws, msg):
 def on_err(ws, e):
     print(f"[GATE] err {e}")
 def on_close(ws, c, m):
-    print(f"[GATE] close {c} {m} - reconnecting in 5s")
-    time.sleep(5)
+    print(f"[GATE] close {c} {m} - will reconnect")
 
-print("=== Replay GATE 1321663876 (captured token) ===")
-ws = websocket.WebSocketApp(GATE_URL, on_open=on_open, on_message=on_msg, on_error=on_err, on_close=on_close)
-ws.run_forever(ping_interval=20, ping_timeout=10)
+print("=== Replay GATE 1321663876 (captured token) - auto reconnect ===")
+while True:
+    ws = websocket.WebSocketApp(GATE_URL, on_open=on_open, on_message=on_msg, on_error=on_err, on_close=on_close)
+    ws.run_forever(ping_interval=20, ping_timeout=10)
+    print("[GATE] reconnecting in 5s...")
+    time.sleep(5)
