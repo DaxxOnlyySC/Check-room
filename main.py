@@ -901,6 +901,7 @@ async def on_command_error(ctx, error):
             "kick": f"`{PREFIX}kick <UIN>`",
             "sendnotif": f"`{PREFIX}sendnotif <UIN> <msg>`",
             "clearVNHat": f"`{PREFIX}clearVNHat`",
+            "clearIDBts": f"`{PREFIX}clearIDBts`",
         }
         cmd = ctx.command.name
         msg = usage.get(cmd, f"`{PREFIX}{cmd}`")
@@ -955,6 +956,7 @@ def menu_embed():
             f"`{PREFIX}kick <UIN>` — Kick player via Lua bridge\n"
             f"`{PREFIX}sendnotif <UIN> <msg>` — Send notif ke player\n"
             f"`{PREFIX}clearVNHat` — Kick semua player di room VN Hat\n"
+            f"`{PREFIX}clearIDBts` — Kick semua host di room Back to School\n"
             f"`{PREFIX}banlist` — Xem danh sách ban\n"
         ),
         inline=False,
@@ -1957,6 +1959,110 @@ async def clearvnh_slash(interaction: discord.Interaction):
     await interaction.followup.send(embed=e)
 
 
+# ============== CLEAR ID BTS ==============
+
+def parse_bts_hosts(data):
+    hosts = []
+    if not data:
+        return hosts
+    roomlist = data.get("roomlist", [])
+    if not isinstance(roomlist, list):
+        roomlist = []
+    rent = data.get("rent", [])
+    if not isinstance(rent, list):
+        rent = []
+    all_rooms = roomlist + rent
+    for rm in all_rooms:
+        uin = rm.get("uin")
+        uname = rm.get("uname", "?")
+        cur = rm.get("cur_count", 0)
+        mx = rm.get("max_count", 0)
+        if uin:
+            hosts.append({"uin": str(uin), "uname": uname, "cur": cur, "max": mx})
+    return hosts
+
+
+@bot.command(name="clearIDBts")
+async def clearidbts_cmd(ctx):
+    load_e = discord.Embed(title="Loading...", description="Fetching Back to School rooms from API...", color=0xf1c40f)
+    msg = await ctx.send(embed=load_e)
+
+    data, err = fetch_room("back_to_school")
+    if err:
+        e = discord.Embed(title="Error", description=err, color=0xe74c3c)
+        await msg.edit(embed=e)
+        return
+
+    parsed, err2 = parse_room(data)
+    if err2:
+        e = discord.Embed(title="Error", description=err2, color=0xe74c3c)
+        await msg.edit(embed=e)
+        return
+
+    hosts = parse_bts_hosts(parsed)
+    if not hosts:
+        e = discord.Embed(title="Clear ID BTS", description="No active Back to School rooms found.", color=0xe74c3c)
+        await msg.edit(embed=e)
+        return
+
+    results = []
+    for h in hosts:
+        real_uin = fix_uin(h["uin"])
+        lua = KICK_LUA.format(uin=real_uin)
+        kick_result = await send_lua_via_bridge(lua)
+        results.append({"uin": real_uin, "uname": h["uname"], "players": f"{h['cur']}/{h['max']}", "result": kick_result})
+
+    e = discord.Embed(title="Clear ID BTS — Done", color=0xe74c3c)
+    for r in results:
+        e.add_field(
+            name=f"{r['uname']} ({r['uin']})",
+            value=f"Players: {r['players']}\nResult: `{r['result']}`",
+            inline=False,
+        )
+    e.set_footer(text=f"Total hosts kicked: {len(results)} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    await msg.edit(embed=e)
+
+
+@bot.tree.command(name="clearidbts", description="Kick all hosts in Back to School rooms")
+async def clearidbts_slash(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    data, err = fetch_room("back_to_school")
+    if err:
+        e = discord.Embed(title="Error", description=err, color=0xe74c3c)
+        await interaction.followup.send(embed=e)
+        return
+
+    parsed, err2 = parse_room(data)
+    if err2:
+        e = discord.Embed(title="Error", description=err2, color=0xe74c3c)
+        await interaction.followup.send(embed=e)
+        return
+
+    hosts = parse_bts_hosts(parsed)
+    if not hosts:
+        e = discord.Embed(title="Clear ID BTS", description="No active Back to School rooms found.", color=0xe74c3c)
+        await interaction.followup.send(embed=e)
+        return
+
+    results = []
+    for h in hosts:
+        real_uin = fix_uin(h["uin"])
+        lua = KICK_LUA.format(uin=real_uin)
+        kick_result = await send_lua_via_bridge(lua)
+        results.append({"uin": real_uin, "uname": h["uname"], "players": f"{h['cur']}/{h['max']}", "result": kick_result})
+
+    e = discord.Embed(title="Clear ID BTS — Done", color=0xe74c3c)
+    for r in results:
+        e.add_field(
+            name=f"{r['uname']} ({r['uin']})",
+            value=f"Players: {r['players']}\nResult: `{r['result']}`",
+            inline=False,
+        )
+    e.set_footer(text=f"Total hosts kicked: {len(results)} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    await interaction.followup.send(embed=e)
+
+
 @bot.command(name="inject")
 async def inject_cmd(ctx):
     if ctx.author.id != OWNER_ID:
@@ -2029,6 +2135,6 @@ if __name__ == "__main__":
     print("  Mini World Bot")
     print("=" * 50)
     print(f"  Prefix : {PREFIX}")
-    print(f"  Commands: menu, profile, cek, map, statusdaily, checkroom, mapcount, recentmaps, serverconfig, queryuin, motion, changedev, setupreport, kick, sendnotif, clearVNHat, banlist")
+    print(f"  Commands: menu, profile, cek, map, statusdaily, checkroom, mapcount, recentmaps, serverconfig, queryuin, motion, changedev, setupreport, kick, sendnotif, clearVNHat, clearIDBts, banlist")
     print("=" * 50)
     bot.run(TOKEN)
