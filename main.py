@@ -1965,6 +1965,16 @@ def parse_bts_hosts(data):
     hosts = []
     if not data:
         return hosts
+    # handle parsed data from parse_room (has "rooms")
+    if "rooms" in data:
+        for rm in data.get("rooms", []) or []:
+            uin = rm.get("uin")
+            uname = rm.get("uname", "?")
+            cur = rm.get("cur_count", 0)
+            mx = rm.get("max_count", 0)
+            if uin:
+                hosts.append({"uin": str(uin), "uname": uname, "cur": cur, "max": mx})
+        return hosts
     roomlist = data.get("roomlist", [])
     if not isinstance(roomlist, list):
         roomlist = []
