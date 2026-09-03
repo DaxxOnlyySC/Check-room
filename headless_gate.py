@@ -111,20 +111,21 @@ gate_ws = None
 stop = False
 
 def on_acchm_open(ws):
-    print("[ACCHM WS] opened, will keepalive 30s")
-    def ping_loop():
-        while not stop:
-            time.sleep(30)
-            try:
-                ws.send('{"cmd":"ping"}')
-                print("[ACCHM WS] ping")
-            except: break
-    threading.Thread(target=ping_loop, daemon=True).start()
+    print("[ACCHM WS] opened, will keepalive 30s (using websocket ping)")
+    # don't send custom text ping - use library's ping_interval
+    pass
 
 def on_acchm_msg(ws, msg): print(f"[ACCHM WS] msg: {msg[:500]}")
 def on_acchm_err(ws, e): 
-    if "NoneType" not in str(e): print(f"[ACCHM WS] err {e}")
-def on_acchm_close(ws, a,b): print("[ACCHM WS] closed")
+    # ignore normal close code 1000
+    msg = str(e)
+    if "NoneType" not in msg and "opcode=8" not in msg:
+        print(f"[ACCHM WS] err {e}")
+def on_acchm_close(ws, a,b): 
+    print(f"[ACCHM WS] closed code={a} reason={b}")
+    if not stop:
+        print("[ACCHM WS] reconnecting in 5s...")
+        time.sleep(5)
 
 if __name__ == "__main__":
     print(f"=== Headless Gate Test UIN={UIN} DEVICE={DEVICE_ID[:10]}... ===")
