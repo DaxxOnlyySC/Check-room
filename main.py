@@ -1987,9 +1987,9 @@ async def clearidbts_cmd(ctx):
     load_e = discord.Embed(title="Loading...", description="Fetching Back to School rooms from API...", color=0xf1c40f)
     msg = await ctx.send(embed=load_e)
 
-    data, err = fetch_room("back_to_school")
-    if err:
-        e = discord.Embed(title="Error", description=err, color=0xe74c3c)
+    data = fetch_room("back_to_school")
+    if "error" in data:
+        e = discord.Embed(title="Error", description=data["error"], color=0xe74c3c)
         await msg.edit(embed=e)
         return
 
@@ -2027,9 +2027,9 @@ async def clearidbts_cmd(ctx):
 async def clearidbts_slash(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    data, err = fetch_room("back_to_school")
-    if err:
-        e = discord.Embed(title="Error", description=err, color=0xe74c3c)
+    data = fetch_room("back_to_school")
+    if "error" in data:
+        e = discord.Embed(title="Error", description=data["error"], color=0xe74c3c)
         await interaction.followup.send(embed=e)
         return
 
