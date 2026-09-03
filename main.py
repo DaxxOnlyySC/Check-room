@@ -1923,7 +1923,7 @@ async def clearvnh_cmd(ctx):
     await msg.edit(embed=e)
 
 
-@bot.tree.command(name="clearVNHat", description="Kick all players in VN Hat rooms")
+@bot.tree.command(name="clearvnhat", description="Kick all players in VN Hat rooms")
 async def clearvnh_slash(interaction: discord.Interaction):
     await interaction.response.defer()
 
