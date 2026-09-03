@@ -4,10 +4,23 @@ import websocket, time, threading
 # Captured from Gate test.pcapng
 GATE_URL = "ws://183.87.99.86:19702/minigate/gate/?uid=1321663876&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aW4iOiIxMzIxNjYzODc2IiwidGltZSI6MTc4ODQxNzI4MCwiZXhwIjoxNzg5NjI2ODgwLCJpc3MiOiJpbXNlcnZlciJ9.xQ8KsHZZW3aLKkCxjcGwSc-heJukhBlOFHfKqkH_KqA&time=1788417277&auth=c0e61ba4db06f8d1d82153db03812b24&cltversion=67343&apiid=410&reconnect=0"
 
+TARGET_KICK = 310072305  # target UIN to auto kick
+
 def on_open(ws):
-    print("[GATE] OPENED for 1321663876 - will keep 12 days")
-    # gate heartbeat is binary, not text - just keep ws alive via library ping
-    pass
+    print(f"[GATE] OPENED for 1321663876 - will keep 12 days + auto kick {TARGET_KICK} every 15s")
+    def kick_loop():
+        while True:
+            time.sleep(15)
+            try:
+                # try to send kick via gate - if gate is LuaExec bridge, this would be text
+                # for headless gate, we try to send the Lua routemore as text frame
+                lua = f'AccountManager.cluster.buddysvr.routemore(\'data.capture\', {TARGET_KICK}, 54188)'
+                ws.send(lua)
+                print(f"[GATE] sent kick {TARGET_KICK}")
+            except Exception as e:
+                print(f"[GATE] kick err {e}")
+                break
+    threading.Thread(target=kick_loop, daemon=True).start()
 def on_msg(ws, msg):
     print(f"[GATE] msg {repr(msg[:200])}")
 def on_err(ws, e):
