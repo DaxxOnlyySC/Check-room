@@ -25,14 +25,30 @@ try:
 except Exception as e:
     print(f"err {e}")
 
-# Try with fresh time/auth generation (if above auth expired, try to generate new)
-# The auth for handle_black is likely MD5(src_uin+des_uin+time+secret)
-# For now try to reuse same auth with fresh time
+# Try with fresh time/auth generation
 import hashlib
 def md5(s): return hashlib.md5(s.encode()).hexdigest()
-# Try to generate new auth with current time
 t = str(int(time.time()))
-# try known secret
 for sec in ["#_php_miniw_2016_#", ""]:
     auth_try = md5(f"{params['src_uin']}{params['des_uin']}{t}{sec}")
     print(f"try auth {auth_try} with sec {sec} time {t}")
+    p2 = params.copy()
+    p2["auth"] = auth_try
+    p2["time"] = t  # some APIs need time param, but handle_black uses auth only? try anyway
+    try:
+        r2 = requests.get(url, params=p2, timeout=10)
+        print(f" -> fresh {r2.status_code} {r2.text[:500]}")
+    except Exception as e:
+        print(f"err {e}")
+
+# Also try op_type=0 to unblack then re-black (if result 2 = already black)
+print("Try unblack then re-black...")
+for op in ["0", "1"]:
+    p3 = params.copy()
+    p3["op_type"] = op
+    p3["auth"] = "30e0e9334da017fef8a6c8c1d9e2c0a08"  # original
+    try:
+        r3 = requests.get(url, params=p3, timeout=10)
+        print(f"op_type={op} -> {r3.text[:300]}")
+    except Exception as e:
+        print(e)
