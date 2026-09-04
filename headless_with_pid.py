@@ -5,23 +5,34 @@ TARGET = "1320454366"
 EXE = r"C:\Users\daxxx\AppData\Roaming\miniworldOverseasgame\MiniGameApp.exe"
 
 print("Checking MiniGameApp PID...")
+EXE2 = r"C:\Users\daxxx\AppData\Roaming\miniworldOverseasgame\MicroMiniNew.exe"
 found = None
 for p in psutil.process_iter(['pid','name']):
-    if p.info['name'] == 'MiniGameApp.exe':
+    if p.info['name'].lower() == 'minigameapp.exe':
         found = p.info['pid']
         break
 if found:
-    print(f"Found PID {found} - can gm.kick {TARGET} via bridge")
+    print(f"Found MiniGameApp PID {found}")
 else:
-    print("No PID - MiniGameApp not running")
-    print(f"Trying to start hidden {EXE}...")
+    for p in psutil.process_iter(['pid','name']):
+        if p.info['name'].lower() == 'micromininew.exe':
+            found = p.info['pid']
+            print(f"Found MicroMiniNew PID {found} (MiniGameApp not yet)")
+            break
+if found:
+    print(f"Can gm.kick {TARGET} via bridge")
+else:
+    print("No PID - try MicroMiniNew hidden...")
     try:
-        # start hidden
-        subprocess.Popen([EXE], creationflags=subprocess.CREATE_NO_WINDOW)
-        time.sleep(8)
+        subprocess.Popen([EXE2], creationflags=subprocess.CREATE_NO_WINDOW)
+        time.sleep(10)
         for p in psutil.process_iter(['pid','name']):
-            if p.info['name'] == 'MiniGameApp.exe':
-                print(f"Started PID {p.info['pid']}")
+            if p.info['name'].lower() == 'minigameapp.exe':
+                print(f"Started MiniGameApp PID {p.info['pid']} via MicroMiniNew")
+                found = p.info['pid']
+                break
+            if p.info['name'].lower() == 'micromininew.exe':
+                print(f"Started MicroMiniNew PID {p.info['pid']}")
                 found = p.info['pid']
                 break
     except Exception as e:
